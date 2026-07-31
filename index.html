@@ -175,82 +175,6 @@ th {
     background: #126e3d;
 }
 
-.chart-btn {
-    background: #0b7285;
-}
-
-.chart-btn:hover {
-    background: #075f6f;
-}
-
-.day-actions {
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.chart-export-card {
-    width: 100%;
-    height: 100%;
-    background: #ffffff;
-    border-radius: 28px;
-    padding: 42px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-}
-
-.chart-export-header {
-    text-align: center;
-    margin-bottom: 18px;
-}
-
-.chart-export-header h2 {
-    margin: 0;
-    color: #0078d7;
-    font-size: 38px;
-}
-
-.chart-export-header p {
-    margin: 10px 0 0;
-    color: #66717d;
-    font-size: 20px;
-}
-
-.chart-wrapper {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.day-chart {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.chart-summary {
-    margin-top: 18px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.chart-summary-item {
-    background: #eef6ff;
-    border-radius: 14px;
-    padding: 14px 16px;
-    font-size: 19px;
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.chart-summary-item strong {
-    color: #0078d7;
-}
-
 .group-table-wrapper {
     overflow-x: auto;
 }
@@ -353,6 +277,59 @@ th {
     color: #65717c;
 }
 
+
+.chart-btn {
+    background: #6f42c1;
+}
+
+.chart-btn:hover {
+    background: #59359c;
+}
+
+.chart-export-card {
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 42px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-export-title {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.chart-export-title h2 {
+    margin: 0;
+    color: #0078d7;
+    font-size: 38px;
+}
+
+.chart-export-title p {
+    margin: 10px 0 0;
+    color: #66717d;
+    font-size: 20px;
+}
+
+.chart-summary {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.chart-summary-item {
+    background: #eef6ff;
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 @media (max-width: 650px) {
     body {
         padding: 10px;
@@ -383,15 +360,6 @@ th {
 
     .persons-input {
         width: 70px;
-    }
-
-    .day-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .chart-summary {
-        grid-template-columns: 1fr;
     }
 
     th,
@@ -453,14 +421,12 @@ th {
     </div>
 
     <div class="day-actions">
-        <button id="installButton" type="button" class="install-btn" hidden>
-            App installeren
-        </button>
-
         <button type="button" class="chart-btn" onclick="downloadDayChart()">
             Download daggrafiek
         </button>
-
+        <button id="installButton" type="button" class="install-btn" hidden>
+            App installeren
+        </button>
         <button type="button" class="end-day-btn" onclick="endDay()">
             Einde dag
         </button>
@@ -469,7 +435,6 @@ th {
 </div>
 
 <div id="exportArea" class="export-area"></div>
-
 <script>
 const trainGroupsElement = document.getElementById("trainGroups");
 const exportArea = document.getElementById("exportArea");
@@ -479,95 +444,19 @@ let nextTrainId = 1;
 
 const STORAGE_KEY = "treintellingen-zandvoort";
 
-function saveData() {
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            trains,
-            nextTrainId
-        })
-    );
+function saveData(){
+ localStorage.setItem(STORAGE_KEY, JSON.stringify({trains,nextTrainId}));
 }
-
-function loadData() {
-    let savedData = null;
-    let sourceKey = null;
-
-    // Eerst de huidige officiële opslag proberen
-    const currentRaw = localStorage.getItem(STORAGE_KEY);
-
-    if (currentRaw) {
-        try {
-            savedData = JSON.parse(currentRaw);
-            sourceKey = STORAGE_KEY;
-        } catch (error) {
-            console.error("Huidige opslag kon niet worden gelezen:", error);
-        }
-    }
-
-    // Geen gegevens gevonden? Zoek dan naar oudere opslag op hetzelfde domein
-    if (!savedData) {
-        for (let index = 0; index < localStorage.length; index++) {
-            const key = localStorage.key(index);
-
-            if (!key || key === STORAGE_KEY) {
-                continue;
-            }
-
-            try {
-                const raw = localStorage.getItem(key);
-                const parsed = JSON.parse(raw);
-
-                // Ondersteunt opslag als object: { trains: [...] }
-                if (parsed && Array.isArray(parsed.trains)) {
-                    savedData = parsed;
-                    sourceKey = key;
-                    break;
-                }
-
-                // Ondersteunt opslag als directe array: [...]
-                if (Array.isArray(parsed)) {
-                    savedData = {
-                        trains: parsed
-                    };
-
-                    sourceKey = key;
-                    break;
-                }
-            } catch (error) {
-                // Dit localStorage-item bevat geen bruikbare JSON
-            }
-        }
-    }
-
-    if (!savedData) {
-        console.warn("Geen eerder opgeslagen treintellingen gevonden.");
-        return;
-    }
-
-    trains = Array.isArray(savedData.trains)
-        ? savedData.trains
-        : [];
-
-    nextTrainId = Number.isInteger(savedData.nextTrainId)
-        ? savedData.nextTrainId
-        : trains.reduce(
-            (highestId, train) => Math.max(highestId, Number(train.id) || 0),
-            0
-        ) + 1;
-
-    sortTrains();
-
-    // Gevonden oude gegevens meteen onder de huidige sleutel opslaan
-    saveData();
-
-    if (sourceKey && sourceKey !== STORAGE_KEY) {
-        console.log(
-            `Oude treintellingen hersteld vanuit localStorage-sleutel: ${sourceKey}`
-        );
-    }
+function loadData(){
+ const raw=localStorage.getItem(STORAGE_KEY);
+ if(!raw) return;
+ try{
+  const data=JSON.parse(raw);
+  trains=Array.isArray(data.trains)?data.trains:[];
+  nextTrainId=Number.isInteger(data.nextTrainId)?data.nextTrainId:(trains.reduce((m,t)=>Math.max(m,t.id||0),0)+1);
+  sortTrains();
+ }catch(e){console.error(e);}
 }
-
 function endDay() {
     if (!confirm(
         "Weet je zeker dat je de dag wilt afsluiten? " +
@@ -579,14 +468,125 @@ function endDay() {
     localStorage.removeItem(STORAGE_KEY);
     trains = [];
     nextTrainId = 1;
-
     renderTrainGroups();
     updateStatistics();
 }
 
+
 function addTrain() {
     const timeInput = document.getElementById("trainTime");
-    const directionInput = document.getElementById
+    const directionInput = document.getElementById("trainDirection");
+
+    const time = timeInput.value;
+    const direction = directionInput.value;
+
+    if (!time) {
+        alert("Vul eerst een treintijd in.");
+        return;
+    }
+
+    trains.push({
+        id: nextTrainId++,
+        time,
+        direction,
+        persons: ""
+    });
+
+    sortTrains();
+    renderTrainGroups();
+    updateStatistics();
+    saveData();
+
+    timeInput.value = "";
+    timeInput.focus();
+}
+
+function sortTrains() {
+    trains.sort((trainA, trainB) => {
+        return trainA.time.localeCompare(trainB.time);
+    });
+}
+
+function deleteTrain(trainId) {
+    trains = trains.filter(train => train.id !== trainId);
+
+    renderTrainGroups();
+    updateStatistics();
+    saveData();
+}
+
+function updateTrainPersons(trainId, value) {
+    const train = trains.find(item => item.id === trainId);
+
+    if (!train) {
+        return;
+    }
+
+    train.persons = value;
+    updateStatistics();
+    saveData();
+}
+
+function renderTrainGroups() {
+    trainGroupsElement.innerHTML = "";
+
+    if (trains.length === 0) {
+        trainGroupsElement.innerHTML = `
+            <div class="empty-message">
+                Er zijn nog geen treinen toegevoegd.
+            </div>
+        `;
+
+        return;
+    }
+
+    const groups = splitIntoGroups(trains, 6);
+
+    groups.forEach((group, groupIndex) => {
+        const wrapper = document.createElement("section");
+        wrapper.className = "train-group-wrapper";
+
+        const startNumber = groupIndex * 6 + 1;
+        const endNumber = startNumber + group.length - 1;
+
+        wrapper.innerHTML = `
+            <div class="group-toolbar">
+                <h2 class="group-title">
+                    Blok ${groupIndex + 1}
+                    · Treinen ${startNumber} t/m ${endNumber}
+                </h2>
+
+                <button
+                    type="button"
+                    class="download-btn"
+                    onclick="downloadGroup(${groupIndex})"
+                >
+                    Download blok als afbeelding
+                </button>
+            </div>
+
+            <div class="group-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Treintijd</th>
+                            <th>Vanaf</th>
+                            <th>Aantal personen</th>
+                            <th>Actie</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${group.map(train => createTrainRow(train)).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        trainGroupsElement.appendChild(wrapper);
+    });
+}
+
 function createTrainRow(train) {
     return `
         <tr>
@@ -623,95 +623,46 @@ function createTrainRow(train) {
 function splitIntoGroups(items, groupSize) {
     const groups = [];
 
-    for (
-        let index = 0;
-        index < items.length;
-        index += groupSize
-    ) {
-        groups.push(
-            items.slice(index, index + groupSize)
-        );
+    for (let index = 0; index < items.length; index += groupSize) {
+        groups.push(items.slice(index, index + groupSize));
     }
 
     return groups;
 }
 
 function calculateStatistics(trainList) {
-    const filledTrainData = trainList
-        .filter(train => train.persons !== "")
-        .map(train => ({
-            ...train,
-            numericPersons:
-                Number.parseInt(train.persons, 10) || 0
-        }));
+    let total = 0;
+    let filled = 0;
 
-    const total = filledTrainData.reduce(
-        (sum, train) =>
-            sum + train.numericPersons,
-        0
-    );
-
-    const filled = filledTrainData.length;
+    trainList.forEach(train => {
+        if (train.persons !== "") {
+            total += Number.parseInt(train.persons, 10) || 0;
+            filled++;
+        }
+    });
 
     const average = filled > 0
         ? (total / filled).toFixed(1)
         : "0";
 
-    const highest = filled > 0
-        ? Math.max(
-            ...filledTrainData.map(
-                train => train.numericPersons
-            )
-        )
-        : 0;
-
-    const lowest = filled > 0
-        ? Math.min(
-            ...filledTrainData.map(
-                train => train.numericPersons
-            )
-        )
-        : 0;
-
-    const busiestTrain = filled > 0
-        ? filledTrainData.reduce(
-            (currentBusiest, train) => {
-                if (
-                    train.numericPersons >
-                    currentBusiest.numericPersons
-                ) {
-                    return train;
-                }
-
-                return currentBusiest;
-            }
-        )
-        : null;
-
     return {
         total,
         filled,
-        average,
-        highest,
-        lowest,
-        busiestTrain
+        average
     };
 }
 
 function updateStatistics() {
     const statistics = calculateStatistics(trains);
 
-    document
-        .getElementById("totalPersons")
-        .textContent = statistics.total;
+    document.getElementById("totalPersons").textContent =
+        statistics.total;
 
-    document
-        .getElementById("filledTrains")
-        .textContent = statistics.filled;
+    document.getElementById("filledTrains").textContent =
+        statistics.filled;
 
-    document
-        .getElementById("averagePersons")
-        .textContent = statistics.average;
+    document.getElementById("averagePersons").textContent =
+        statistics.average;
 }
 
 function createExportRows(group) {
@@ -745,7 +696,6 @@ function createExportRows(group) {
         `;
     }).join("");
 }
-
 async function downloadGroup(groupIndex) {
     const groups = splitIntoGroups(trains, 6);
     const group = groups[groupIndex];
@@ -754,26 +704,23 @@ async function downloadGroup(groupIndex) {
         return;
     }
 
-    const dayStatistics =
-        calculateStatistics(trains);
+    /*
+        De statistieken worden bewust berekend over alle treinen
+        van de volledige dag en niet alleen over dit blok.
+    */
+    const dayStatistics = calculateStatistics(trains);
 
-    const startNumber =
-        groupIndex * 6 + 1;
-
-    const endNumber =
-        startNumber + group.length - 1;
+    const startNumber = groupIndex * 6 + 1;
+    const endNumber = startNumber + group.length - 1;
 
     exportArea.innerHTML = `
         <div class="export-card">
             <div class="export-header">
-                <h2>
-                    Treintellingen Station Zandvoort
-                </h2>
+                <h2>Treintellingen Station Zandvoort</h2>
 
                 <p>
                     Blok ${groupIndex + 1}
-                    · Treinen ${startNumber}
-                    t/m ${endNumber}
+                    · Treinen ${startNumber} t/m ${endNumber}
                 </p>
             </div>
 
@@ -794,30 +741,19 @@ async function downloadGroup(groupIndex) {
             <div class="export-stats">
                 <div class="export-stat-row">
                     <span>Totaal hele dag</span>
+                    <span>${dayStatistics.total}</span>
+                </div>
+
+                <div class="export-stat-row">
+                    <span>Ingevulde treinen hele dag</span>
                     <span>
-                        ${dayStatistics.total}
+                        ${dayStatistics.filled} van ${trains.length}
                     </span>
                 </div>
 
                 <div class="export-stat-row">
-                    <span>
-                        Ingevulde treinen hele dag
-                    </span>
-
-                    <span>
-                        ${dayStatistics.filled}
-                        van ${trains.length}
-                    </span>
-                </div>
-
-                <div class="export-stat-row">
-                    <span>
-                        Gemiddelde hele dag
-                    </span>
-
-                    <span>
-                        ${dayStatistics.average}
-                    </span>
+                    <span>Gemiddelde hele dag</span>
+                    <span>${dayStatistics.average}</span>
                 </div>
             </div>
 
@@ -827,502 +763,28 @@ async function downloadGroup(groupIndex) {
         </div>
     `;
 
-    await downloadExportArea(
-        `treintellingen-blok-${groupIndex + 1}.png`
-    );
-}
-
-function getFilledTrains() {
-    return trains
-        .filter(train => train.persons !== "")
-        .map(train => ({
-            ...train,
-            numericPersons:
-                Number.parseInt(train.persons, 10) || 0
-        }));
-}
-
-function createDayChartSvg(filledTrains) {
-    const width = 810;
-    const height = 610;
-
-    const margin = {
-        top: 70,
-        right: 45,
-        bottom: 100,
-        left: 75
-    };
-
-    const chartWidth =
-        width - margin.left - margin.right;
-
-    const chartHeight =
-        height - margin.top - margin.bottom;
-
-    const values = filledTrains.map(
-        train => train.numericPersons
-    );
-
-    const maximumValue = Math.max(...values, 1);
-
-    const roundedMaximum = Math.max(
-        10,
-        Math.ceil(maximumValue / 10) * 10
-    );
-
-    const statistics =
-        calculateStatistics(filledTrains);
-
-    const pointSpacing = filledTrains.length > 1
-        ? chartWidth / (filledTrains.length - 1)
-        : 0;
-
-    const getX = index => {
-        if (filledTrains.length === 1) {
-            return margin.left + chartWidth / 2;
-        }
-
-        return margin.left + index * pointSpacing;
-    };
-
-    const getY = value => {
-        return (
-            margin.top +
-            chartHeight -
-            (value / roundedMaximum) *
-            chartHeight
-        );
-    };
-
-    const horizontalGridLines = [];
-    const yAxisLabels = [];
-
-    const numberOfSteps = 5;
-
-    for (
-        let step = 0;
-        step <= numberOfSteps;
-        step++
-    ) {
-        const value =
-            roundedMaximum *
-            (step / numberOfSteps);
-
-        const y = getY(value);
-
-        horizontalGridLines.push(`
-            <line
-                x1="${margin.left}"
-                y1="${y}"
-                x2="${margin.left + chartWidth}"
-                y2="${y}"
-                stroke="#dfe5ea"
-                stroke-width="1"
-            />
-        `);
-
-        yAxisLabels.push(`
-            <text
-                x="${margin.left - 15}"
-                y="${y + 6}"
-                text-anchor="end"
-                font-size="17"
-                fill="#56616c"
-            >
-                ${Math.round(value)}
-            </text>
-        `);
-    }
-
-    const linePoints = filledTrains
-        .map((train, index) => {
-            return `${getX(index)},${getY(
-                train.numericPersons
-            )}`;
-        })
-        .join(" ");
-
-    const averageY =
-        getY(Number(statistics.average));
-
-    const busiestTrain =
-        statistics.busiestTrain;
-
-    const busiestIndex =
-        filledTrains.findIndex(
-            train => train.id === busiestTrain.id
-        );
-
-    const points = filledTrains.map(
-        (train, index) => {
-            const isBusiest =
-                index === busiestIndex;
-
-            const circleRadius =
-                isBusiest ? 10 : 7;
-
-            const circleFill =
-                isBusiest
-                    ? "#b3261e"
-                    : "#0078d7";
-
-            return `
-                <circle
-                    cx="${getX(index)}"
-                    cy="${getY(
-                        train.numericPersons
-                    )}"
-                    r="${circleRadius}"
-                    fill="${circleFill}"
-                    stroke="#ffffff"
-                    stroke-width="3"
-                />
-
-                <text
-                    x="${getX(index)}"
-                    y="${
-                        getY(
-                            train.numericPersons
-                        ) - 16
-                    }"
-                    text-anchor="middle"
-                    font-size="16"
-                    font-weight="bold"
-                    fill="#17212b"
-                >
-                    ${train.numericPersons}
-                </text>
-            `;
-        }
-    ).join("");
-
-    const xAxisLabels = filledTrains.map(
-        (train, index) => {
-            const x = getX(index);
-            const y =
-                margin.top +
-                chartHeight +
-                28;
-
-            return `
-                <g
-                    transform="
-                        translate(${x}, ${y})
-                        rotate(-45)
-                    "
-                >
-                    <text
-                        text-anchor="end"
-                        font-size="15"
-                        fill="#56616c"
-                    >
-                        ${escapeSvg(train.time)}
-                    </text>
-
-                    <text
-                        y="18"
-                        text-anchor="end"
-                        font-size="12"
-                        fill="#7b858f"
-                    >
-                        ${escapeSvg(
-                            train.direction
-                        )}
-                    </text>
-                </g>
-            `;
-        }
-    ).join("");
-
-    return `
-        <svg
-            class="day-chart"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 ${width} ${height}"
-            role="img"
-            aria-label="Daggrafiek treintellingen"
-        >
-            <rect
-                width="${width}"
-                height="${height}"
-                fill="#ffffff"
-            />
-
-            <text
-                x="${width / 2}"
-                y="34"
-                text-anchor="middle"
-                font-size="20"
-                font-weight="bold"
-                fill="#17212b"
-            >
-                Aantal personen per trein
-            </text>
-
-            ${horizontalGridLines.join("")}
-            ${yAxisLabels.join("")}
-
-            <line
-                x1="${margin.left}"
-                y1="${margin.top}"
-                x2="${margin.left}"
-                y2="${margin.top + chartHeight}"
-                stroke="#74808b"
-                stroke-width="2"
-            />
-
-            <line
-                x1="${margin.left}"
-                y1="${margin.top + chartHeight}"
-                x2="${margin.left + chartWidth}"
-                y2="${margin.top + chartHeight}"
-                stroke="#74808b"
-                stroke-width="2"
-            />
-
-            <line
-                x1="${margin.left}"
-                y1="${averageY}"
-                x2="${margin.left + chartWidth}"
-                y2="${averageY}"
-                stroke="#18864b"
-                stroke-width="3"
-                stroke-dasharray="12 8"
-            />
-
-            <text
-                x="${margin.left + chartWidth - 5}"
-                y="${averageY - 10}"
-                text-anchor="end"
-                font-size="15"
-                font-weight="bold"
-                fill="#18864b"
-            >
-                Gemiddelde:
-                ${statistics.average}
-            </text>
-
-            ${
-                filledTrains.length > 1
-                    ? `
-                        <polyline
-                            points="${linePoints}"
-                            fill="none"
-                            stroke="#0078d7"
-                            stroke-width="5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    `
-                    : ""
-            }
-
-            ${points}
-            ${xAxisLabels}
-
-            <text
-                x="24"
-                y="${margin.top + chartHeight / 2}"
-                transform="
-                    rotate(
-                        -90,
-                        24,
-                        ${margin.top + chartHeight / 2}
-                    )
-                "
-                text-anchor="middle"
-                font-size="17"
-                font-weight="bold"
-                fill="#56616c"
-            >
-                Aantal personen
-            </text>
-
-            <circle
-                cx="${margin.left}"
-                cy="${height - 25}"
-                r="7"
-                fill="#0078d7"
-            />
-
-            <text
-                x="${margin.left + 16}"
-                y="${height - 19}"
-                font-size="14"
-                fill="#56616c"
-            >
-                Treintelling
-            </text>
-
-            <circle
-                cx="${margin.left + 150}"
-                cy="${height - 25}"
-                r="8"
-                fill="#b3261e"
-            />
-
-            <text
-                x="${margin.left + 168}"
-                y="${height - 19}"
-                font-size="14"
-                fill="#56616c"
-            >
-                Drukste trein
-            </text>
-
-            <line
-                x1="${margin.left + 300}"
-                y1="${height - 25}"
-                x2="${margin.left + 355}"
-                y2="${height - 25}"
-                stroke="#18864b"
-                stroke-width="3"
-                stroke-dasharray="10 7"
-            />
-
-            <text
-                x="${margin.left + 365}"
-                y="${height - 19}"
-                font-size="14"
-                fill="#56616c"
-            >
-                Gemiddelde
-            </text>
-        </svg>
-    `;
-}
-
-async function downloadDayChart() {
-    const filledTrains = getFilledTrains();
-
-    if (filledTrains.length === 0) {
-        alert(
-            "Vul eerst bij minimaal één trein " +
-            "het aantal personen in."
-        );
-
-        return;
-    }
-
-    const statistics =
-        calculateStatistics(filledTrains);
-
-    const busiestTrain =
-        statistics.busiestTrain;
-
-    exportArea.innerHTML = `
-        <div class="chart-export-card">
-            <div class="chart-export-header">
-                <h2>
-                    Daggrafiek Station Zandvoort
-                </h2>
-
-                <p>
-                    Personen per trein
-                    · ${getCurrentDateText()}
-                </p>
-            </div>
-
-            <div class="chart-wrapper">
-                ${createDayChartSvg(
-                    filledTrains
-                )}
-            </div>
-
-            <div class="chart-summary">
-                <div class="chart-summary-item">
-                    <span>Totaal</span>
-                    <strong>
-                        ${statistics.total}
-                    </strong>
-                </div>
-
-                <div class="chart-summary-item">
-                    <span>Gemiddelde</span>
-                    <strong>
-                        ${statistics.average}
-                    </strong>
-                </div>
-
-                <div class="chart-summary-item">
-                    <span>Hoogste telling</span>
-                    <strong>
-                        ${statistics.highest}
-                    </strong>
-                </div>
-
-                <div class="chart-summary-item">
-                    <span>Laagste telling</span>
-                    <strong>
-                        ${statistics.lowest}
-                    </strong>
-                </div>
-
-                <div class="chart-summary-item">
-                    <span>Ingevulde treinen</span>
-                    <strong>
-                        ${statistics.filled}
-                        van ${trains.length}
-                    </strong>
-                </div>
-
-                <div class="chart-summary-item">
-                    <span>Drukste trein</span>
-                    <strong>
-                        ${escapeHtml(
-                            busiestTrain.time
-                        )}
-                        ·
-                        ${escapeHtml(
-                            busiestTrain.direction
-                        )}
-                    </strong>
-                </div>
-            </div>
-
-            <div class="export-footer">
-                Treintellingen Station Zandvoort
-            </div>
-        </div>
-    `;
-
-    await downloadExportArea(
-        `treintellingen-daggrafiek-${getFileDate()}.png`
-    );
-}
-
-async function downloadExportArea(fileName) {
     try {
-        const canvas = await html2canvas(
-            exportArea,
-            {
-                width: 900,
-                height: 1200,
-                scale: 1,
-                backgroundColor: "#eef3f7",
-                useCORS: true,
-                logging: false
-            }
-        );
+        const canvas = await html2canvas(exportArea, {
+            width: 900,
+            height: 1200,
+            scale: 1,
+            backgroundColor: "#eef3f7",
+            useCORS: true,
+            logging: false
+        });
 
-        const downloadLink =
-            document.createElement("a");
+        const downloadLink = document.createElement("a");
 
-        downloadLink.download = fileName;
-        downloadLink.href =
-            canvas.toDataURL("image/png");
+        downloadLink.download =
+            `treintellingen-blok-${groupIndex + 1}.png`;
 
-        document.body.appendChild(
-            downloadLink
-        );
+        downloadLink.href = canvas.toDataURL("image/png");
 
+        document.body.appendChild(downloadLink);
         downloadLink.click();
         downloadLink.remove();
     } catch (error) {
-        console.error(
-            "Afbeelding maken mislukt:",
-            error
-        );
+        console.error("Afbeelding maken mislukt:", error);
 
         alert(
             "Het maken van de afbeelding is mislukt. " +
@@ -1333,32 +795,136 @@ async function downloadExportArea(fileName) {
     }
 }
 
-function getCurrentDateText() {
-    return new Intl.DateTimeFormat(
-        "nl-NL",
-        {
-            day: "2-digit",
-            month: "long",
-            year: "numeric"
-        }
-    ).format(new Date());
-}
+async function downloadDayChart() {
+    const filledTrains = trains.filter(train => train.persons !== "");
 
-function getFileDate() {
-    const date = new Date();
+    if (filledTrains.length === 0) {
+        alert("Vul eerst bij minimaal één trein het aantal personen in.");
+        return;
+    }
 
-    const year =
-        date.getFullYear();
+    const values = filledTrains.map(train => Number.parseInt(train.persons, 10) || 0);
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const average = total / values.length;
+    const highest = Math.max(...values);
+    const lowest = Math.min(...values);
+    const busiestIndex = values.indexOf(highest);
+    const busiestTrain = filledTrains[busiestIndex];
 
-    const month = String(
-        date.getMonth() + 1
-    ).padStart(2, "0");
+    const width = 816;
+    const height = 650;
+    const margin = { top: 55, right: 35, bottom: 95, left: 75 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const maxValue = Math.max(10, Math.ceil(highest / 10) * 10);
+    const xStep = filledTrains.length > 1 ? plotWidth / (filledTrains.length - 1) : 0;
+    const y = value => margin.top + plotHeight - (value / maxValue) * plotHeight;
+    const x = index => filledTrains.length > 1
+        ? margin.left + index * xStep
+        : margin.left + plotWidth / 2;
 
-    const day = String(
-        date.getDate()
-    ).padStart(2, "0");
+    const points = values.map((value, index) => `${x(index)},${y(value)}`).join(" ");
+    const yTicks = 5;
+    let gridLines = "";
 
-    return `${year}-${month}-${day}`;
+    for (let tick = 0; tick <= yTicks; tick++) {
+        const value = Math.round((maxValue / yTicks) * tick);
+        const yPos = y(value);
+        gridLines += `
+            <line x1="${margin.left}" y1="${yPos}" x2="${width - margin.right}" y2="${yPos}"
+                  stroke="#dce2e7" stroke-width="1" />
+            <text x="${margin.left - 12}" y="${yPos + 6}" text-anchor="end"
+                  font-size="16" fill="#52606d">${value}</text>
+        `;
+    }
+
+    const labels = filledTrains.map((train, index) => {
+        const xPos = x(index);
+        return `
+            <text x="${xPos}" y="${height - margin.bottom + 28}" text-anchor="middle"
+                  font-size="14" fill="#52606d"
+                  transform="rotate(-45 ${xPos} ${height - margin.bottom + 28})">
+                ${escapeHtml(train.time)}
+            </text>
+        `;
+    }).join("");
+
+    const dots = values.map((value, index) => {
+        const isBusiest = index === busiestIndex;
+        return `
+            <circle cx="${x(index)}" cy="${y(value)}" r="${isBusiest ? 8 : 5}"
+                    fill="${isBusiest ? "#d9534f" : "#0078d7"}" />
+            <text x="${x(index)}" y="${y(value) - 13}" text-anchor="middle"
+                  font-size="15" font-weight="bold" fill="#17212b">${value}</text>
+        `;
+    }).join("");
+
+    const averageY = y(average);
+
+    exportArea.innerHTML = `
+        <div class="chart-export-card">
+            <div class="chart-export-title">
+                <h2>Treintellingen Station Zandvoort</h2>
+                <p>Daggrafiek · personen per trein</p>
+            </div>
+
+            <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"
+                 xmlns="http://www.w3.org/2000/svg" role="img"
+                 aria-label="Daggrafiek van het aantal personen per trein">
+                <rect width="100%" height="100%" fill="#ffffff" />
+                ${gridLines}
+                <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}"
+                      stroke="#52606d" stroke-width="2" />
+                <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}"
+                      stroke="#52606d" stroke-width="2" />
+                <line x1="${margin.left}" y1="${averageY}" x2="${width - margin.right}" y2="${averageY}"
+                      stroke="#18864b" stroke-width="3" stroke-dasharray="10 8" />
+                <text x="${width - margin.right}" y="${averageY - 10}" text-anchor="end"
+                      font-size="16" fill="#18864b">Gemiddelde ${average.toFixed(1)}</text>
+                <polyline points="${points}" fill="none" stroke="#0078d7" stroke-width="4"
+                          stroke-linecap="round" stroke-linejoin="round" />
+                ${dots}
+                ${labels}
+                <text x="22" y="${margin.top + plotHeight / 2}" text-anchor="middle"
+                      font-size="18" font-weight="bold" fill="#17212b"
+                      transform="rotate(-90 22 ${margin.top + plotHeight / 2})">Aantal personen</text>
+                <text x="${margin.left + plotWidth / 2}" y="${height - 10}" text-anchor="middle"
+                      font-size="18" font-weight="bold" fill="#17212b">Treintijd</text>
+            </svg>
+
+            <div class="chart-summary">
+                <div class="chart-summary-item"><span>Totaal</span><strong>${total}</strong></div>
+                <div class="chart-summary-item"><span>Gemiddelde</span><strong>${average.toFixed(1)}</strong></div>
+                <div class="chart-summary-item"><span>Ingevulde treinen</span><strong>${filledTrains.length} van ${trains.length}</strong></div>
+                <div class="chart-summary-item"><span>Hoogste telling</span><strong>${highest}</strong></div>
+                <div class="chart-summary-item"><span>Laagste telling</span><strong>${lowest}</strong></div>
+                <div class="chart-summary-item"><span>Drukste trein</span><strong>${escapeHtml(busiestTrain.time)} · ${escapeHtml(busiestTrain.direction)}</strong></div>
+            </div>
+        </div>
+    `;
+
+    try {
+        const canvas = await html2canvas(exportArea, {
+            width: 900,
+            height: 1200,
+            scale: 1,
+            backgroundColor: "#eef3f7",
+            useCORS: true,
+            logging: false
+        });
+
+        const downloadLink = document.createElement("a");
+        downloadLink.download = "treintellingen-daggrafiek.png";
+        downloadLink.href = canvas.toDataURL("image/png");
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+    } catch (error) {
+        console.error("Daggrafiek maken mislukt:", error);
+        alert("Het maken van de daggrafiek is mislukt.");
+    } finally {
+        exportArea.innerHTML = "";
+    }
 }
 
 function escapeHtml(value) {
@@ -1370,79 +936,46 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-function escapeSvg(value) {
-    return escapeHtml(value);
-}
-
 document
     .getElementById("trainTime")
-    .addEventListener(
-        "keydown",
-        event => {
-            if (event.key === "Enter") {
-                addTrain();
-            }
+    .addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            addTrain();
         }
-    );
+    });
 
 let deferredInstallPrompt = null;
+const installButton = document.getElementById("installButton");
 
-const installButton =
-    document.getElementById(
-        "installButton"
-    );
+window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    installButton.hidden = false;
+});
 
-window.addEventListener(
-    "beforeinstallprompt",
-    event => {
-        event.preventDefault();
-
-        deferredInstallPrompt = event;
-        installButton.hidden = false;
+installButton.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) {
+        return;
     }
-);
 
-installButton.addEventListener(
-    "click",
-    async () => {
-        if (!deferredInstallPrompt) {
-            return;
-        }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installButton.hidden = true;
+});
 
-        deferredInstallPrompt.prompt();
-
-        await deferredInstallPrompt
-            .userChoice;
-
-        deferredInstallPrompt = null;
-        installButton.hidden = true;
-    }
-);
-
-window.addEventListener(
-    "appinstalled",
-    () => {
-        deferredInstallPrompt = null;
-        installButton.hidden = true;
-    }
-);
+window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    installButton.hidden = true;
+});
 
 if ("serviceWorker" in navigator) {
-    window.addEventListener(
-        "load",
-        () => {
-            navigator.serviceWorker
-                .register(
-                    "./service-worker.js"
-                )
-                .catch(error => {
-                    console.error(
-                        "Service worker registreren mislukt:",
-                        error
-                    );
-                });
-        }
-    );
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .catch(error => {
+                console.error("Service worker registreren mislukt:", error);
+            });
+    });
 }
 
 loadData();
