@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Treintellingen</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0078d7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Treintellingen">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+    color: #17212b;
+}
+
+.container {
+    width: 100%;
+    max-width: 1000px;
+    margin: auto;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+h1 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+input,
+select,
+button {
+    padding: 10px;
+    font-size: 16px;
+}
+
+input[type="time"],
+select {
+    flex: 1;
+}
+
+button {
+    background: #0078d7;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0068bc;
+}
+
+.day-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.end-day-btn {
+    background: #b3261e;
+}
+
+.end-day-btn:hover {
+    background: #8f1f19;
+}
+
+.install-btn {
+    background: #5b3fa3;
+}
+
+.install-btn:hover {
+    background: #493282;
+}
+
+.install-btn[hidden] {
+    display: none;
+}
+
+.delete-btn {
+    background: #d9534f;
+}
+
+.delete-btn:hover {
+    background: #c53f3b;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    border: 1px solid #d7dce1;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background: #0078d7;
+    color: #ffffff;
+}
+
+.persons-input {
+    width: 90px;
+    text-align: center;
+}
+
+.stats-box {
+    margin-top: 20px;
+    padding: 15px;
+    background: #eef6ff;
+    border-radius: 5px;
+    font-weight: bold;
+    line-height: 2;
+}
+
+.train-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.train-group-wrapper {
+    border: 1px solid #d7dce1;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.group-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 12px 15px;
+    background: #f2f6f9;
+    border-bottom: 1px solid #d7dce1;
+}
+
+.group-title {
+    margin: 0;
+    font-size: 18px;
+}
+
+.download-btn {
+    background: #18864b;
+}
+
+.download-btn:hover {
+    background: #126e3d;
+}
+
+.group-table-wrapper {
+    overflow-x: auto;
+}
+
+.export-area {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 900px;
+    height: 1200px;
+    background: #eef3f7;
+    padding: 45px;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.export-card {
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 45px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.export-header {
+    text-align: center;
+    margin-bottom: 38px;
+}
+
+.export-header h2 {
+    margin: 0;
+    color: #0078d7;
+    font-size: 40px;
+}
+
+.export-header p {
+    margin: 12px 0 0;
+    color: #66717d;
+    font-size: 22px;
+}
+
+.export-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.export-table th {
+    background: #0078d7;
+    color: #ffffff;
+    padding: 20px 10px;
+    font-size: 23px;
+}
+
+.export-table td {
+    height: 88px;
+    padding: 15px 10px;
+    font-size: 25px;
+    border: 2px solid #dce2e7;
+}
+
+.export-table tbody tr:nth-child(even) {
+    background: #f5f9fc;
+}
+
+.export-stats {
+    margin-top: auto;
+    padding: 28px;
+    border-radius: 18px;
+    background: #eef6ff;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.export-stat-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    font-size: 26px;
+}
+
+.export-stat-row span:first-child {
+    font-weight: bold;
+}
+
+.export-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: #7b858f;
+    font-size: 18px;
+}
+
+.empty-message {
+    padding: 30px;
+    text-align: center;
+    color: #65717c;
+}
+
+@media (max-width: 650px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+
+    input,
+    select,
+    button {
+        width: 100%;
+    }
+
+    .group-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .group-title {
+        text-align: center;
+    }
+
+    .persons-input {
+        width: 70px;
+    }
+
+    th,
+    td {
+        padding: 8px 5px;
+        font-size: 14px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Treintellingen Station Zandvoort</h1>
+
+    <div class="form-row">
+        <input
+            type="time"
+            id="trainTime"
+            aria-label="Treintijd"
+        >
+
+        <select
+            id="trainDirection"
+            aria-label="Richting"
+        >
+            <option value="Amsterdam">Amsterdam</option>
+            <option value="Haarlem">Haarlem</option>
+        </select>
+
+        <button type="button" onclick="addTrain()">
+            Trein toevoegen
+        </button>
+    </div>
+
+    <div id="trainGroups" class="train-groups">
+        <div class="empty-message">
+            Er zijn nog geen treinen toegevoegd.
+        </div>
+    </div>
+
+    <div class="stats-box">
+        <div>
+            Totaal aantal personen:
+            <span id="totalPersons">0</span>
+        </div>
+
+        <div>
+            Ingevulde treinen:
+            <span id="filledTrains">0</span>
+        </div>
+
+        <div>
+            Gemiddeld aantal personen:
+            <span id="averagePersons">0</span>
+        </div>
+    </div>
+
+    <div class="day-actions">
+        <button id="installButton" type="button" class="install-btn" hidden>
+            App installeren
+        </button>
+        <button type="button" class="end-day-btn" onclick="endDay()">
+            Einde dag
+        </button>
+    </div>
+
+</div>
+
+<div id="exportArea" class="export-area"></div>
+<script>
+const trainGroupsElement = document.getElementById("trainGroups");
+const exportArea = document.getElementById("exportArea");
+
+let trains = [];
+let nextTrainId = 1;
+
+const STORAGE_KEY = "treintellingen-zandvoort";
+
+function saveData(){
+ localStorage.setItem(STORAGE_KEY, JSON.stringify({trains,nextTrainId}));
+}
+function loadData(){
+ const raw=localStorage.getItem(STORAGE_KEY);
+ if(!raw) return;
+ try{
+  const data=JSON.parse(raw);
+  trains=Array.isArray(data.trains)?data.trains:[];
+  nextTrainId=Number.isInteger(data.nextTrainId)?data.nextTrainId:(trains.reduce((m,t)=>Math.max(m,t.id||0),0)+1);
+  sortTrains();
+ }catch(e){console.error(e);}
+}
+function endDay() {
+    if (!confirm(
+        "Weet je zeker dat je de dag wilt afsluiten? " +
+        "Alle treinen en tellingen op dit apparaat worden gewist."
+    )) {
+        return;
+    }
+
+    localStorage.removeItem(STORAGE_KEY);
+    trains = [];
+    nextTrainId = 1;
+    renderTrainGroups();
+    updateStatistics();
+}
+
+
+function addTrain() {
+    const timeInput = document.getElementById("trainTime");
+    const directionInput = document.getElementById("trainDirection");
+
+    const time = timeInput.value;
+    const direction = directionInput.value;
+
+    if (!time) {
+        alert("Vul eerst een treintijd in.");
+        return;
+    }
+
+    trains.push({
+        id: nextTrainId++,
+        time,
+        direction,
+        persons: ""
+    });
+
+    sortTrains();
+    renderTrainGroups();
+    updateStatistics();
+    saveData();
+
+    timeInput.value = "";
+    timeInput.focus();
+}
+
+function sortTrains() {
+    trains.sort((trainA, trainB) => {
+        return trainA.time.localeCompare(trainB.time);
+    });
+}
+
+function deleteTrain(trainId) {
+    trains = trains.filter(train => train.id !== trainId);
+
+    renderTrainGroups();
+    updateStatistics();
+    saveData();
+}
+
+function updateTrainPersons(trainId, value) {
+    const train = trains.find(item => item.id === trainId);
+
+    if (!train) {
+        return;
+    }
+
+    train.persons = value;
+    updateStatistics();
+    saveData();
+}
+
+function renderTrainGroups() {
+    trainGroupsElement.innerHTML = "";
+
+    if (trains.length === 0) {
+        trainGroupsElement.innerHTML = `
+            <div class="empty-message">
+                Er zijn nog geen treinen toegevoegd.
+            </div>
+        `;
+
+        return;
+    }
+
+    const groups = splitIntoGroups(trains, 6);
+
+    groups.forEach((group, groupIndex) => {
+        const wrapper = document.createElement("section");
+        wrapper.className = "train-group-wrapper";
+
+        const startNumber = groupIndex * 6 + 1;
+        const endNumber = startNumber + group.length - 1;
+
+        wrapper.innerHTML = `
+            <div class="group-toolbar">
+                <h2 class="group-title">
+                    Blok ${groupIndex + 1}
+                    · Treinen ${startNumber} t/m ${endNumber}
+                </h2>
+
+                <button
+                    type="button"
+                    class="download-btn"
+                    onclick="downloadGroup(${groupIndex})"
+                >
+                    Download blok als afbeelding
+                </button>
+            </div>
+
+            <div class="group-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Treintijd</th>
+                            <th>Vanaf</th>
+                            <th>Aantal personen</th>
+                            <th>Actie</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${group.map(train => createTrainRow(train)).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        trainGroupsElement.appendChild(wrapper);
+    });
+}
+
+function createTrainRow(train) {
+    return `
+        <tr>
+            <td>${escapeHtml(train.time)}</td>
+
+            <td>${escapeHtml(train.direction)}</td>
+
+            <td>
+                <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="persons-input"
+                    value="${escapeHtml(train.persons)}"
+                    placeholder="-"
+                    aria-label="Aantal personen bij trein ${escapeHtml(train.time)}"
+                    oninput="updateTrainPersons(${train.id}, this.value)"
+                >
+            </td>
+
+            <td>
+                <button
+                    type="button"
+                    class="delete-btn"
+                    onclick="deleteTrain(${train.id})"
+                >
+                    Verwijder
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+function splitIntoGroups(items, groupSize) {
+    const groups = [];
+
+    for (let index = 0; index < items.length; index += groupSize) {
+        groups.push(items.slice(index, index + groupSize));
+    }
+
+    return groups;
+}
+
+function calculateStatistics(trainList) {
+    let total = 0;
+    let filled = 0;
+
+    trainList.forEach(train => {
+        if (train.persons !== "") {
+            total += Number.parseInt(train.persons, 10) || 0;
+            filled++;
+        }
+    });
+
+    const average = filled > 0
+        ? (total / filled).toFixed(1)
+        : "0";
+
+    return {
+        total,
+        filled,
+        average
+    };
+}
+
+function updateStatistics() {
+    const statistics = calculateStatistics(trains);
+
+    document.getElementById("totalPersons").textContent =
+        statistics.total;
+
+    document.getElementById("filledTrains").textContent =
+        statistics.filled;
+
+    document.getElementById("averagePersons").textContent =
+        statistics.average;
+}
+
+function createExportRows(group) {
+    const rows = [...group];
+
+    while (rows.length < 6) {
+        rows.push(null);
+    }
+
+    return rows.map(train => {
+        if (!train) {
+            return `
+                <tr>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                </tr>
+            `;
+        }
+
+        const persons = train.persons === ""
+            ? "Niet ingevuld"
+            : train.persons;
+
+        return `
+            <tr>
+                <td>${escapeHtml(train.time)}</td>
+                <td>${escapeHtml(train.direction)}</td>
+                <td>${escapeHtml(persons)}</td>
+            </tr>
+        `;
+    }).join("");
+}
+async function downloadGroup(groupIndex) {
+    const groups = splitIntoGroups(trains, 6);
+    const group = groups[groupIndex];
+
+    if (!group || group.length === 0) {
+        return;
+    }
+
+    /*
+        De statistieken worden bewust berekend over alle treinen
+        van de volledige dag en niet alleen over dit blok.
+    */
+    const dayStatistics = calculateStatistics(trains);
+
+    const startNumber = groupIndex * 6 + 1;
+    const endNumber = startNumber + group.length - 1;
+
+    exportArea.innerHTML = `
+        <div class="export-card">
+            <div class="export-header">
+                <h2>Treintellingen Station Zandvoort</h2>
+
+                <p>
+                    Blok ${groupIndex + 1}
+                    · Treinen ${startNumber} t/m ${endNumber}
+                </p>
+            </div>
+
+            <table class="export-table">
+                <thead>
+                    <tr>
+                        <th>Treintijd</th>
+                        <th>Vanaf</th>
+                        <th>Aantal personen</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${createExportRows(group)}
+                </tbody>
+            </table>
+
+            <div class="export-stats">
+                <div class="export-stat-row">
+                    <span>Totaal hele dag</span>
+                    <span>${dayStatistics.total}</span>
+                </div>
+
+                <div class="export-stat-row">
+                    <span>Ingevulde treinen hele dag</span>
+                    <span>
+                        ${dayStatistics.filled} van ${trains.length}
+                    </span>
+                </div>
+
+                <div class="export-stat-row">
+                    <span>Gemiddelde hele dag</span>
+                    <span>${dayStatistics.average}</span>
+                </div>
+            </div>
+
+            <div class="export-footer">
+                Dagstatistieken Station Zandvoort
+            </div>
+        </div>
+    `;
+
+    try {
+        const canvas = await html2canvas(exportArea, {
+            width: 900,
+            height: 1200,
+            scale: 1,
+            backgroundColor: "#eef3f7",
+            useCORS: true,
+            logging: false
+        });
+
+        const downloadLink = document.createElement("a");
+
+        downloadLink.download =
+            `treintellingen-blok-${groupIndex + 1}.png`;
+
+        downloadLink.href = canvas.toDataURL("image/png");
+
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+    } catch (error) {
+        console.error("Afbeelding maken mislukt:", error);
+
+        alert(
+            "Het maken van de afbeelding is mislukt. " +
+            "Controleer of html2canvas geladen is."
+        );
+    } finally {
+        exportArea.innerHTML = "";
+    }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+document
+    .getElementById("trainTime")
+    .addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            addTrain();
+        }
+    });
+
+let deferredInstallPrompt = null;
+const installButton = document.getElementById("installButton");
+
+window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    installButton.hidden = false;
+});
+
+installButton.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) {
+        return;
+    }
+
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    installButton.hidden = true;
+});
+
+window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    installButton.hidden = true;
+});
+
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .catch(error => {
+                console.error("Service worker registreren mislukt:", error);
+            });
+    });
+}
+
+loadData();
+renderTrainGroups();
+updateStatistics();
+</script>
+
+</body>
+</html>

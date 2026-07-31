@@ -1,0 +1,16 @@
+{
+  "name": "Treintellingen Station Zandvoort",
+  "short_name": "Treintellingen",
+  "description": "Treinaantallen registreren bij Station Zandvoort.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f4",
+  "theme_color": "#0078d7",
+  "lang": "nl-NL",
+  "orientation": "portrait-primary",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
