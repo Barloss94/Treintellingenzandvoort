@@ -490,30 +490,81 @@ function saveData() {
 }
 
 function loadData() {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let savedData = null;
+    let sourceKey = null;
 
-    if (!raw) {
+    // Eerst de huidige officiële opslag proberen
+    const currentRaw = localStorage.getItem(STORAGE_KEY);
+
+    if (currentRaw) {
+        try {
+            savedData = JSON.parse(currentRaw);
+            sourceKey = STORAGE_KEY;
+        } catch (error) {
+            console.error("Huidige opslag kon niet worden gelezen:", error);
+        }
+    }
+
+    // Geen gegevens gevonden? Zoek dan naar oudere opslag op hetzelfde domein
+    if (!savedData) {
+        for (let index = 0; index < localStorage.length; index++) {
+            const key = localStorage.key(index);
+
+            if (!key || key === STORAGE_KEY) {
+                continue;
+            }
+
+            try {
+                const raw = localStorage.getItem(key);
+                const parsed = JSON.parse(raw);
+
+                // Ondersteunt opslag als object: { trains: [...] }
+                if (parsed && Array.isArray(parsed.trains)) {
+                    savedData = parsed;
+                    sourceKey = key;
+                    break;
+                }
+
+                // Ondersteunt opslag als directe array: [...]
+                if (Array.isArray(parsed)) {
+                    savedData = {
+                        trains: parsed
+                    };
+
+                    sourceKey = key;
+                    break;
+                }
+            } catch (error) {
+                // Dit localStorage-item bevat geen bruikbare JSON
+            }
+        }
+    }
+
+    if (!savedData) {
+        console.warn("Geen eerder opgeslagen treintellingen gevonden.");
         return;
     }
 
-    try {
-        const data = JSON.parse(raw);
+    trains = Array.isArray(savedData.trains)
+        ? savedData.trains
+        : [];
 
-        trains = Array.isArray(data.trains)
-            ? data.trains
-            : [];
+    nextTrainId = Number.isInteger(savedData.nextTrainId)
+        ? savedData.nextTrainId
+        : trains.reduce(
+            (highestId, train) => Math.max(highestId, Number(train.id) || 0),
+            0
+        ) + 1;
 
-        nextTrainId = Number.isInteger(data.nextTrainId)
-            ? data.nextTrainId
-            : trains.reduce(
-                (maximum, train) =>
-                    Math.max(maximum, train.id || 0),
-                0
-            ) + 1;
+    sortTrains();
 
-        sortTrains();
-    } catch (error) {
-        console.error("Opgeslagen gegevens laden mislukt:", error);
+    // Gevonden oude gegevens meteen onder de huidige sleutel opslaan
+    saveData();
+
+    if (sourceKey && sourceKey !== STORAGE_KEY) {
+        console.log(
+            `Oude treintellingen hersteld vanuit localStorage-sleutel: ${sourceKey}`
+        );
     }
 }
 
