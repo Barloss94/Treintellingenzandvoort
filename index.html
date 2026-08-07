@@ -31,7 +31,7 @@ body {
 
 .container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1250px;
     margin: auto;
     background: #ffffff;
     padding: 20px;
@@ -74,6 +74,11 @@ button:hover {
     background: #0068bc;
 }
 
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .day-actions {
     display: flex;
     justify-content: flex-end;
@@ -110,6 +115,29 @@ button:hover {
     background: #c53f3b;
 }
 
+.cancel-btn {
+    background: #e58a00;
+}
+
+.cancel-btn:hover {
+    background: #c87800;
+}
+
+.restore-btn {
+    background: #18864b;
+}
+
+.restore-btn:hover {
+    background: #126e3d;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -143,6 +171,25 @@ th {
 
 .new-arrival.delayed {
     color: #b3261e;
+}
+
+.cancelled-row {
+    background: #fff0f0 !important;
+    color: #8f1f19;
+}
+
+.cancelled-row td {
+    opacity: 0.88;
+}
+
+.cancelled-status {
+    display: inline-block;
+    background: #b3261e;
+    color: #ffffff;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: bold;
 }
 
 .stats-box {
@@ -243,19 +290,25 @@ th {
 .export-table th {
     background: #0078d7;
     color: #ffffff;
-    padding: 18px 8px;
-    font-size: 18px;
+    padding: 16px 6px;
+    font-size: 16px;
 }
 
 .export-table td {
     height: 88px;
-    padding: 15px 8px;
-    font-size: 20px;
+    padding: 12px 6px;
+    font-size: 18px;
     border: 2px solid #dce2e7;
 }
 
 .export-table tbody tr:nth-child(even) {
     background: #f5f9fc;
+}
+
+.export-cancelled-row {
+    background: #fff0f0 !important;
+    color: #b3261e;
+    font-weight: bold;
 }
 
 .export-stats {
@@ -272,7 +325,7 @@ th {
     display: flex;
     justify-content: space-between;
     gap: 30px;
-    font-size: 26px;
+    font-size: 24px;
 }
 
 .export-stat-row span:first-child {
@@ -377,6 +430,14 @@ th {
         width: 70px;
     }
 
+    .action-buttons {
+        min-width: 110px;
+    }
+
+    .action-buttons button {
+        width: auto;
+    }
+
     th,
     td {
         padding: 8px 5px;
@@ -427,6 +488,11 @@ th {
         <div>
             Ingevulde treinen:
             <span id="filledTrains">0</span>
+        </div>
+
+        <div>
+            Geannuleerde treinen:
+            <span id="cancelledTrains">0</span>
         </div>
 
         <div>
@@ -485,7 +551,8 @@ function loadData() {
         trains = Array.isArray(data.trains)
             ? data.trains.map(train => ({
                 ...train,
-                delay: train.delay ?? ""
+                delay: train.delay ?? "",
+                cancelled: train.cancelled ?? false
             }))
             : [];
 
@@ -493,15 +560,15 @@ function loadData() {
             ? data.nextTrainId
             : (
                 trains.reduce(
-                    (maxId, train) =>
-                        Math.max(maxId, train.id || 0),
+                    (maxId, train) => Math.max(maxId, train.id || 0),
                     0
                 ) + 1
             );
 
         sortTrains();
+
     } catch (error) {
-        console.error(error);
+        console.error("Opgeslagen gegevens laden mislukt:", error);
     }
 }
 
@@ -523,11 +590,8 @@ function endDay() {
 }
 
 function addTrain() {
-    const timeInput =
-        document.getElementById("trainTime");
-
-    const directionInput =
-        document.getElementById("trainDirection");
+    const timeInput = document.getElementById("trainTime");
+    const directionInput = document.getElementById("trainDirection");
 
     const time = timeInput.value;
     const direction = directionInput.value;
@@ -542,7 +606,8 @@ function addTrain() {
         time,
         direction,
         delay: "",
-        persons: ""
+        persons: "",
+        cancelled: false
     });
 
     sortTrains();
@@ -561,10 +626,30 @@ function sortTrains() {
 }
 
 function deleteTrain(trainId) {
-    trains =
-        trains.filter(
-            train => train.id !== trainId
-        );
+    trains = trains.filter(train => train.id !== trainId);
+
+    renderTrainGroups();
+    updateStatistics();
+    saveData();
+}
+
+function toggleTrainCancelled(trainId) {
+    const train = trains.find(item => item.id === trainId);
+
+    if (!train) {
+        return;
+    }
+
+    train.cancelled = !train.cancelled;
+
+    /*
+        Bij annuleren laten we een eventuele eerder
+        ingevoerde telling staan in de data, maar deze
+        telt niet meer mee in de statistieken.
+
+        Als de annulering ongedaan wordt gemaakt,
+        staat de eerder ingevoerde telling dus weer klaar.
+    */
 
     renderTrainGroups();
     updateStatistics();
@@ -572,12 +657,9 @@ function deleteTrain(trainId) {
 }
 
 function updateTrainPersons(trainId, value) {
-    const train =
-        trains.find(
-            item => item.id === trainId
-        );
+    const train = trains.find(item => item.id === trainId);
 
-    if (!train) {
+    if (!train || train.cancelled) {
         return;
     }
 
@@ -588,23 +670,15 @@ function updateTrainPersons(trainId, value) {
 }
 
 function updateTrainDelay(trainId, value) {
-    const train =
-        trains.find(
-            item => item.id === trainId
-        );
+    const train = trains.find(item => item.id === trainId);
 
-    if (!train) {
+    if (!train || train.cancelled) {
         return;
     }
 
     train.delay = value;
 
-    /*
-        We renderen de tabel opnieuw zodat de nieuwe
-        aankomsttijd direct wordt bijgewerkt.
-    */
     renderTrainGroups();
-
     saveData();
 }
 
@@ -613,28 +687,22 @@ function calculateArrivalTime(time, delay) {
         return "";
     }
 
-    const delayMinutes =
-        Number.parseInt(delay, 10) || 0;
+    const delayMinutes = Number.parseInt(delay, 10) || 0;
 
-    const [hours, minutes] =
-        time.split(":").map(Number);
+    const [hours, minutes] = time
+        .split(":")
+        .map(Number);
 
     const totalMinutes =
         (hours * 60) +
         minutes +
         delayMinutes;
 
-    /*
-        Zorgt ervoor dat bijvoorbeeld
-        23:57 + 8 minuten = 00:05.
-    */
     const normalizedMinutes =
         ((totalMinutes % 1440) + 1440) % 1440;
 
     const newHours =
-        Math.floor(
-            normalizedMinutes / 60
-        );
+        Math.floor(normalizedMinutes / 60);
 
     const newMinutes =
         normalizedMinutes % 60;
@@ -659,89 +727,115 @@ function renderTrainGroups() {
         return;
     }
 
-    const groups =
-        splitIntoGroups(trains, 6);
+    const groups = splitIntoGroups(trains, 6);
 
-    groups.forEach(
-        (group, groupIndex) => {
-            const wrapper =
-                document.createElement("section");
+    groups.forEach((group, groupIndex) => {
+        const wrapper = document.createElement("section");
 
-            wrapper.className =
-                "train-group-wrapper";
+        wrapper.className = "train-group-wrapper";
 
-            const startNumber =
-                groupIndex * 6 + 1;
+        const startNumber = groupIndex * 6 + 1;
+        const endNumber = startNumber + group.length - 1;
 
-            const endNumber =
-                startNumber +
-                group.length -
-                1;
+        wrapper.innerHTML = `
+            <div class="group-toolbar">
+                <h2 class="group-title">
+                    Blok ${groupIndex + 1}
+                    · Treinen ${startNumber} t/m ${endNumber}
+                </h2>
 
-            wrapper.innerHTML = `
-                <div class="group-toolbar">
-                    <h2 class="group-title">
-                        Blok ${groupIndex + 1}
-                        · Treinen
-                        ${startNumber}
-                        t/m
-                        ${endNumber}
-                    </h2>
+                <button
+                    type="button"
+                    class="download-btn"
+                    onclick="downloadGroup(${groupIndex})"
+                >
+                    Download blok als afbeelding
+                </button>
+            </div>
 
-                    <button
-                        type="button"
-                        class="download-btn"
-                        onclick="downloadGroup(${groupIndex})"
-                    >
-                        Download blok als afbeelding
-                    </button>
-                </div>
+            <div class="group-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Treintijd</th>
+                            <th>Vanaf</th>
+                            <th>Vertraging</th>
+                            <th>Aankomst</th>
+                            <th>Aantal personen</th>
+                            <th>Status / actie</th>
+                        </tr>
+                    </thead>
 
-                <div class="group-table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Treintijd</th>
-                                <th>Vanaf</th>
-                                <th>Vertraging</th>
-                                <th>Nieuwe aankomst</th>
-                                <th>Aantal personen</th>
-                                <th>Actie</th>
-                            </tr>
-                        </thead>
+                    <tbody>
+                        ${group.map(train => createTrainRow(train)).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
 
-                        <tbody>
-                            ${
-                                group
-                                    .map(
-                                        train =>
-                                            createTrainRow(train)
-                                    )
-                                    .join("")
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            trainGroupsElement
-                .appendChild(wrapper);
-        }
-    );
+        trainGroupsElement.appendChild(wrapper);
+    });
 }
 
 function createTrainRow(train) {
-    const delay =
-        train.delay ?? "";
-
-    const delayNumber =
-        Number.parseInt(delay, 10) || 0;
+    const delay = train.delay ?? "";
+    const delayNumber = Number.parseInt(delay, 10) || 0;
 
     const newArrivalTime =
         calculateArrivalTime(
             train.time,
             delay
         );
+
+    if (train.cancelled) {
+        return `
+            <tr class="cancelled-row">
+                <td>
+                    ${escapeHtml(train.time)}
+                </td>
+
+                <td>
+                    ${escapeHtml(train.direction)}
+                </td>
+
+                <td>
+                    —
+                </td>
+
+                <td>
+                    —
+                </td>
+
+                <td>
+                    —
+                </td>
+
+                <td>
+                    <div class="action-buttons">
+                        <span class="cancelled-status">
+                            Geannuleerd
+                        </span>
+
+                        <button
+                            type="button"
+                            class="restore-btn"
+                            onclick="toggleTrainCancelled(${train.id})"
+                        >
+                            Herstel
+                        </button>
+
+                        <button
+                            type="button"
+                            class="delete-btn"
+                            onclick="deleteTrain(${train.id})"
+                        >
+                            Verwijder
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
 
     const delayedClass =
         delayNumber > 0
@@ -792,13 +886,23 @@ function createTrainRow(train) {
             </td>
 
             <td>
-                <button
-                    type="button"
-                    class="delete-btn"
-                    onclick="deleteTrain(${train.id})"
-                >
-                    Verwijder
-                </button>
+                <div class="action-buttons">
+                    <button
+                        type="button"
+                        class="cancel-btn"
+                        onclick="toggleTrainCancelled(${train.id})"
+                    >
+                        Annuleer
+                    </button>
+
+                    <button
+                        type="button"
+                        class="delete-btn"
+                        onclick="deleteTrain(${train.id})"
+                    >
+                        Verwijder
+                    </button>
+                </div>
             </td>
         </tr>
     `;
@@ -826,8 +930,14 @@ function splitIntoGroups(items, groupSize) {
 function calculateStatistics(trainList) {
     let total = 0;
     let filled = 0;
+    let cancelled = 0;
 
     trainList.forEach(train => {
+        if (train.cancelled) {
+            cancelled++;
+            return;
+        }
+
         if (train.persons !== "") {
             total +=
                 Number.parseInt(
@@ -847,6 +957,7 @@ function calculateStatistics(trainList) {
     return {
         total,
         filled,
+        cancelled,
         average
     };
 }
@@ -864,6 +975,11 @@ function updateStatistics() {
         .getElementById("filledTrains")
         .textContent =
             statistics.filled;
+
+    document
+        .getElementById("cancelledTrains")
+        .textContent =
+            statistics.cancelled;
 
     document
         .getElementById("averagePersons")
@@ -887,6 +1003,37 @@ function createExportRows(group) {
                     <td>—</td>
                     <td>—</td>
                     <td>—</td>
+                    <td>—</td>
+                </tr>
+            `;
+        }
+
+        if (train.cancelled) {
+            return `
+                <tr class="export-cancelled-row">
+                    <td>
+                        ${escapeHtml(train.time)}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(train.direction)}
+                    </td>
+
+                    <td>
+                        —
+                    </td>
+
+                    <td>
+                        —
+                    </td>
+
+                    <td>
+                        —
+                    </td>
+
+                    <td>
+                        GEANNULEERD
+                    </td>
                 </tr>
             `;
         }
@@ -937,6 +1084,10 @@ function createExportRows(group) {
                 <td>
                     ${escapeHtml(persons)}
                 </td>
+
+                <td>
+                    Actief
+                </td>
             </tr>
         `;
     }).join("");
@@ -956,11 +1107,6 @@ async function downloadGroup(groupIndex) {
         return;
     }
 
-    /*
-        De statistieken worden bewust berekend over
-        alle treinen van de volledige dag en niet
-        alleen over dit blok.
-    */
     const dayStatistics =
         calculateStatistics(trains);
 
@@ -997,6 +1143,7 @@ async function downloadGroup(groupIndex) {
                         <th>Vertraging</th>
                         <th>Aankomst</th>
                         <th>Personen</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
 
@@ -1006,9 +1153,10 @@ async function downloadGroup(groupIndex) {
             </table>
 
             <div class="export-stats">
+
                 <div class="export-stat-row">
                     <span>
-                        Totaal hele dag
+                        Totaal personen
                     </span>
 
                     <span>
@@ -1018,25 +1166,34 @@ async function downloadGroup(groupIndex) {
 
                 <div class="export-stat-row">
                     <span>
-                        Ingevulde treinen hele dag
+                        Ingevulde treinen
                     </span>
 
                     <span>
                         ${dayStatistics.filled}
-                        van
-                        ${trains.length}
                     </span>
                 </div>
 
                 <div class="export-stat-row">
                     <span>
-                        Gemiddelde hele dag
+                        Geannuleerde treinen
+                    </span>
+
+                    <span>
+                        ${dayStatistics.cancelled}
+                    </span>
+                </div>
+
+                <div class="export-stat-row">
+                    <span>
+                        Gemiddelde
                     </span>
 
                     <span>
                         ${dayStatistics.average}
                     </span>
                 </div>
+
             </div>
 
             <div class="export-footer">
@@ -1092,15 +1249,20 @@ async function downloadGroup(groupIndex) {
 }
 
 async function downloadDayChart() {
+    /*
+        Geannuleerde treinen worden niet meegenomen
+        in de grafiek.
+    */
     const filledTrains =
         trains.filter(
             train =>
+                !train.cancelled &&
                 train.persons !== ""
         );
 
     if (filledTrains.length === 0) {
         alert(
-            "Vul eerst bij minimaal één trein " +
+            "Vul eerst bij minimaal één niet-geannuleerde trein " +
             "het aantal personen in."
         );
 
@@ -1300,6 +1462,9 @@ async function downloadDayChart() {
     const averageY =
         y(average);
 
+    const cancelledCount =
+        trains.filter(train => train.cancelled).length;
+
     exportArea.innerHTML = `
         <div class="chart-export-card">
 
@@ -1365,8 +1530,7 @@ async function downloadDayChart() {
                     font-size="16"
                     fill="#18864b"
                 >
-                    Gemiddelde
-                    ${average.toFixed(1)}
+                    Gemiddelde ${average.toFixed(1)}
                 </text>
 
                 <polyline
@@ -1379,7 +1543,6 @@ async function downloadDayChart() {
                 />
 
                 ${dots}
-
                 ${labels}
 
                 <text
@@ -1421,11 +1584,12 @@ async function downloadDayChart() {
 
                 <div class="chart-summary-item">
                     <span>Ingevulde treinen</span>
-                    <strong>
-                        ${filledTrains.length}
-                        van
-                        ${trains.length}
-                    </strong>
+                    <strong>${filledTrains.length}</strong>
+                </div>
+
+                <div class="chart-summary-item">
+                    <span>Geannuleerd</span>
+                    <strong>${cancelledCount}</strong>
                 </div>
 
                 <div class="chart-summary-item">
@@ -1472,14 +1636,10 @@ async function downloadDayChart() {
             "treintellingen-daggrafiek.png";
 
         downloadLink.href =
-            canvas.toDataURL(
-                "image/png"
-            );
+            canvas.toDataURL("image/png");
 
         document.body
-            .appendChild(
-                downloadLink
-            );
+            .appendChild(downloadLink);
 
         downloadLink.click();
 
